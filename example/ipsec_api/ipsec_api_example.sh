@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2019, Nokia
+# Copyright (c) 2019-2020, Nokia
 # All rights reserved.
 #
 # SPDX-License-Identifier:	BSD-3-Clause
@@ -15,18 +15,14 @@ fi
 # Absolute path to the example binary. This is needed during distcheck, which
 # keeps scripts and binaries in different directories (scripts are not copied
 # into the distribution directory).
-export IPSEC_EXAMPLE_PATH=$(pwd)/../../../example/ipsec_api
+export IPSEC_EXAMPLE_PATH=$(pwd)
 
 declare -i RESULT=0
-
-pushd $(dirname $0)/../../../../example/ipsec_api
 
 ./odp_ipsec_api_run_simple.sh
 RESULT+=$?
 
 ./odp_ipsec_api_run_esp_out.sh
 RESULT+=$?
-
-popd
 
 exit ${RESULT}

@@ -3,6 +3,7 @@ include $(top_srcdir)/example/Makefile.inc
 bin_PROGRAMS = odp_ipsec_api
 
 dist_check_SCRIPTS = \
+		   ipsec_api_example.sh \
 		   odp_ipsec_api_run_ah_in.sh \
 		   odp_ipsec_api_run_ah_out.sh \
 		   odp_ipsec_api_run_ah_tun_in.sh \
@@ -34,6 +35,7 @@ odp_ipsec_api_SOURCES += \
 
 AM_CPPFLAGS = $(OPENSSL_CPPFLAGS)
 LDADD += $(OPENSSL_LIBS)
+TESTS = ipsec_api_example.sh
 
 else
 AM_CPPFLAGS = -DNO_OPENSSL
