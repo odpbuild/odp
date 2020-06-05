@@ -1,4 +1,5 @@
 /* Copyright (c) 2014-2018, Linaro Limited
+ * Copyright (c) 2020, Nokia
  * All rights reserved.
  *
  * SPDX-License-Identifier:     BSD-3-Clause
@@ -108,6 +109,20 @@ int odp_packet_has_l2(odp_packet_t pkt);
 int odp_packet_has_l3(odp_packet_t pkt);
 
 /**
+ * Check for inner IP in IP L3 protocols
+ * 
+ * When included in the parse configuration, check if packet parsing has found
+ * and checked an inner IP in IP layer 3 protocol (e.g. IPv4, IPv6) in the
+ * packet.
+ *
+ * @param pkt          Packet handle
+ *
+ * @retval non-zero    An inner layer 3 protocol header was found and checked
+ * @retval 0           No inner layer 3 protocol was found
+ */
+int odp_packet_has_l3_inner(odp_packet_t pkt);
+
+/**
  * Check for layer 4 protocols
  *
  * When layer 4 is included in the parse configuration, check if packet parsing
@@ -206,6 +221,16 @@ int odp_packet_has_arp(odp_packet_t pkt);
 int odp_packet_has_ipv4(odp_packet_t pkt);
 
 /**
+ * Check for inner IP in IP IPv4 header
+ *
+ * @param pkt          Packet handle
+ *
+ * @retval non-zero    Packet contains an inner IPv4 header
+ * @retval 0           Packet does not contain an inner IPv4 header
+ */
+int odp_packet_has_ipv4_inner(odp_packet_t pkt);
+
+/**
  * Check for IPv6
  *
  * @param pkt          Packet handle
@@ -214,6 +239,16 @@ int odp_packet_has_ipv4(odp_packet_t pkt);
  * @retval 0           Packet does not contain an IPv6 header
  */
 int odp_packet_has_ipv6(odp_packet_t pkt);
+
+/**
+ * Check for inner IP in IP IPv6 header
+ *
+ * @param pkt          Packet handle
+ *
+ * @retval non-zero    Packet contains an inner IPv6 header
+ * @retval 0           Packet does not contain an inner IPv6 header
+ */
+int odp_packet_has_ipv6_inner(odp_packet_t pkt);
 
 /**
  * Check for IP broadcast address
@@ -257,6 +292,16 @@ int odp_packet_has_ip_mcast(odp_packet_t pkt);
 int odp_packet_has_ipfrag(odp_packet_t pkt);
 
 /**
+ * Check for IP fragment in inner layer of an IP in IP packet
+ *
+ * @param pkt          Packet handle
+ *
+ * @retval non-zero    Inner IP packet is an IP fragment
+ * @retval 0           Inner IP packet is not an IP fragment
+ */
+int odp_packet_has_ipfrag_inner(odp_packet_t pkt);
+
+/**
  * Check for IP options
  *
  * @param pkt          Packet handle
@@ -265,6 +310,16 @@ int odp_packet_has_ipfrag(odp_packet_t pkt);
  * @retval 0           Packet does not contain IP options
  */
 int odp_packet_has_ipopt(odp_packet_t pkt);
+
+/**
+ * Check for IP options in inner layer of an IP in IP packet
+ *
+ * @param pkt          Packet handle
+ *
+ * @retval non-zero    Inner IP packet contains IP options
+ * @retval 0           Inner IP packet does not contain IP options
+ */
+int odp_packet_has_ipopt_inner(odp_packet_t pkt);
 
 /**
  * Check for IPSec
@@ -457,6 +512,14 @@ void odp_packet_has_ip_mcast_set(odp_packet_t pkt, int val);
  * @param val Value
  */
 void odp_packet_has_ipfrag_set(odp_packet_t pkt, int val);
+
+/**
+ * Set flag for IP fragment in inner layer of an IP in IP packet
+ *
+ * @param pkt Packet handle
+ * @param val Value
+ */
+void odp_packet_has_ipfrag_inner_set(odp_packet_t pkt, int val);
 
 /**
  * Set flag for IP options
