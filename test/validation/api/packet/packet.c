@@ -2624,6 +2624,21 @@ static void packet_test_ref(void)
 	odp_packet_free(ref_pkt[1]);
 }
 
+static void packet_vector_test_event_conversion(void)
+{
+	odp_packet_vector_t pktv0 = pktv_default;
+	odp_packet_vector_t pktv1;
+	odp_event_t event;
+
+	event = odp_packet_vector_to_event(pktv0);
+	CU_ASSERT_FATAL(event != ODP_EVENT_INVALID);
+	CU_ASSERT(odp_event_type(event) == ODP_EVENT_PACKET_VECTOR);
+
+	pktv1 = odp_packet_vector_from_event(event);
+	CU_ASSERT_FATAL(pktv1 != ODP_PACKET_VECTOR_INVALID);
+	CU_ASSERT(pktv1 == pktv0);
+}
+
 static int remove_invalid_pkts_tbl(odp_packet_t *pkt_tbl, int num_pkts)
 {
 	int i, j, count = 0;
@@ -3945,6 +3960,7 @@ odp_testinfo_t packet_vector_parse_suite[] = {
 	ODP_TEST_INFO(packet_vector_basic_test),
 	ODP_TEST_INFO(packet_vector_test_alloc_free),
 	ODP_TEST_INFO(packet_vector_test_tbl),
+	ODP_TEST_INFO(packet_vector_test_event_conversion),
 	ODP_TEST_INFO_NULL,
 };
 
