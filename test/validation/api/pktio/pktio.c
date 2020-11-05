@@ -494,7 +494,7 @@ static odp_pktio_t create_pktv_pktio(int iface_idx, odp_pktin_mode_t imode,
 
 	CU_ASSERT(odp_pktio_capability(pktio, &capa) == 0);
 	if (!capa.vector.supported) {
-		printf("Vector mode is not supported. Test Skipped\n");
+		printf("Vector mode is not supported. Test Skipped.\n");
 		return ODP_PKTIO_INVALID;
 	}
 
@@ -632,7 +632,7 @@ static int create_packets(odp_packet_t pkt_tbl[], uint32_t pkt_seq[], int num,
 }
 
 static int get_packets(pktio_info_t *pktio_rx, odp_packet_t pkt_tbl[],
-		       int num, txrx_mode_e mode)
+		       int num, txrx_mode_e mode, odp_bool_t vector_mode)
 {
 	odp_event_t evt_tbl[num];
 	int num_evts = 0;
@@ -673,9 +673,9 @@ static int get_packets(pktio_info_t *pktio_rx, odp_packet_t pkt_tbl[],
 
 	/* convert events to packets, discarding any non-packet events */
 	for (i = 0; i < num_evts; ++i) {
-		if (odp_event_type(evt_tbl[i]) == ODP_EVENT_PACKET) {
+		if (!vector_mode && odp_event_type(evt_tbl[i]) == ODP_EVENT_PACKET) {
 			pkt_tbl[num_pkts++] = odp_packet_from_event(evt_tbl[i]);
-		} else if (odp_event_type(evt_tbl[i]) == ODP_EVENT_PACKET_VECTOR &&
+		} else if (vector_mode &&  odp_event_type(evt_tbl[i]) == ODP_EVENT_PACKET_VECTOR &&
 			   num_pkts < num) {
 			odp_packet_vector_t pktv;
 			odp_packet_t *pkts;
@@ -707,7 +707,7 @@ static int get_packets(pktio_info_t *pktio_rx, odp_packet_t pkt_tbl[],
 
 static int wait_for_packets_hdr(pktio_info_t *pktio_rx, odp_packet_t pkt_tbl[],
 				uint32_t seq_tbl[], int num, txrx_mode_e mode,
-				uint64_t ns, size_t l4_hdr_len)
+				uint64_t ns, size_t l4_hdr_len, odp_bool_t vector_mode)
 {
 	odp_time_t wait_time, end, start;
 	int num_rx = 0;
@@ -719,7 +719,7 @@ static int wait_for_packets_hdr(pktio_info_t *pktio_rx, odp_packet_t pkt_tbl[],
 	end       = odp_time_sum(start, wait_time);
 
 	while (num_rx < num && odp_time_cmp(end, odp_time_local()) > 0) {
-		int n = get_packets(pktio_rx, pkt_tmp, num - num_rx, mode);
+		int n = get_packets(pktio_rx, pkt_tmp, num - num_rx, mode, vector_mode);
 
 		if (n < 0)
 			break;
@@ -741,10 +741,10 @@ static int wait_for_packets_hdr(pktio_info_t *pktio_rx, odp_packet_t pkt_tbl[],
 
 static int wait_for_packets(pktio_info_t *pktio_rx, odp_packet_t pkt_tbl[],
 			    uint32_t seq_tbl[], int num, txrx_mode_e mode,
-			    uint64_t ns)
+			    uint64_t ns, odp_bool_t vector_mode)
 {
 	return wait_for_packets_hdr(pktio_rx, pkt_tbl, seq_tbl, num, mode, ns,
-				    ODPH_UDPHDR_LEN);
+				    ODPH_UDPHDR_LEN, vector_mode);
 }
 
 static int recv_packets_tmo(odp_pktio_t pktio, odp_packet_t pkt_tbl[],
@@ -898,7 +898,8 @@ static void check_parser_capa(odp_pktio_t pktio, int *l2, int *l3, int *l4)
 
 static void pktio_txrx_multi(pktio_info_t *pktio_info_a,
 			     pktio_info_t *pktio_info_b,
-			     int num_pkts, txrx_mode_e mode)
+			     int num_pkts, txrx_mode_e mode,
+			     odp_bool_t vector_mode)
 {
 	odp_packet_t tx_pkt[num_pkts];
 	odp_packet_t rx_pkt[num_pkts];
@@ -956,8 +957,8 @@ static void pktio_txrx_multi(pktio_info_t *pktio_info_a,
 	}
 
 	/* and wait for them to arrive back */
-	num_rx = wait_for_packets(pktio_info_b, rx_pkt, tx_seq,
-				  num_pkts, mode, ODP_TIME_SEC_IN_NS);
+	num_rx = wait_for_packets(pktio_info_b, rx_pkt, tx_seq, num_pkts, mode,
+				  ODP_TIME_SEC_IN_NS, vector_mode);
 	CU_ASSERT(num_rx == num_pkts);
 	if (num_rx != num_pkts)
 		ODPH_ERR("received %i, out of %i packets\n", num_rx, num_pkts);
@@ -1066,7 +1067,7 @@ static void test_txrx(odp_pktin_mode_t in_mode, int num_pkts,
 	/* if we have two interfaces then send through one and receive on
 	 * another but if there's only one assume it's a loopback */
 	if_b = (num_ifaces == 1) ? 0 : 1;
-	pktio_txrx_multi(&pktios[0], &pktios[if_b], num_pkts, mode);
+	pktio_txrx_multi(&pktios[0], &pktios[if_b], num_pkts, mode, vector_mode);
 
 	for (i = 0; i < num_ifaces; ++i) {
 		ret = odp_pktio_stop(pktios[i].id);
@@ -2251,7 +2252,7 @@ static void pktio_test_pktin_ts(void)
 		CU_ASSERT_FATAL(odp_pktout_send(pktout_queue,
 						&pkt_tbl[i], 1) == 1);
 		ret = wait_for_packets(&pktio_rx_info, &pkt_tbl[i], &pkt_seq[i],
-				       1, TXRX_MODE_SINGLE, ODP_TIME_SEC_IN_NS);
+				       1, TXRX_MODE_SINGLE, ODP_TIME_SEC_IN_NS, false);
 		if (ret != 1)
 			break;
 		odp_time_wait_ns(PKTIN_TS_INTERVAL);
@@ -2331,7 +2332,7 @@ static void pktio_test_chksum(void (*config_fn)(odp_pktio_t, odp_pktio_t),
 	send_packets(pktout_queue, pkt_tbl, TX_BATCH_LEN);
 	num_rx = wait_for_packets(&pktio_rx_info, pkt_tbl, pkt_seq,
 				  TX_BATCH_LEN, TXRX_MODE_MULTI,
-				  ODP_TIME_SEC_IN_NS);
+				  ODP_TIME_SEC_IN_NS, false);
 	CU_ASSERT(num_rx == TX_BATCH_LEN);
 	for (i = 0; i < num_rx; i++) {
 		test_fn(pkt_tbl[i]);
@@ -2400,7 +2401,7 @@ static void pktio_test_chksum_sctp(void (*config_fn)(odp_pktio_t, odp_pktio_t),
 	send_packets(pktout_queue, pkt_tbl, TX_BATCH_LEN);
 	num_rx = wait_for_packets_hdr(&pktio_rx_info, pkt_tbl, pkt_seq,
 				      TX_BATCH_LEN, TXRX_MODE_MULTI,
-				      ODP_TIME_SEC_IN_NS, ODPH_SCTPHDR_LEN);
+				      ODP_TIME_SEC_IN_NS, ODPH_SCTPHDR_LEN, false);
 	CU_ASSERT(num_rx == TX_BATCH_LEN);
 	for (i = 0; i < num_rx; i++) {
 		test_fn(pkt_tbl[i]);
