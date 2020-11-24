@@ -19,6 +19,10 @@ jobs:
       run: |
         sudo apt install codespell
 
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
     - name: Checkpatch
       run: |
         AFTER=${{ github.event.after }}
